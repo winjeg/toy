@@ -1,7 +1,6 @@
 package resp
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -11,5 +10,14 @@ const (
 
 func TestParse(t *testing.T) {
 	data := Parse([]byte(str))
-	fmt.Println(data)
+	if len(data) <= 0 {
+		t.FailNow()
+	}
+}
+
+func BenchmarkParse(b *testing.B) {
+	data := []byte(str)
+	for i := 0; i < b.N; i++ {
+		Parse(data)
+	}
 }

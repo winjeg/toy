@@ -5,11 +5,8 @@ import (
 	"strconv"
 )
 
-type Command struct {
-	Name string
-	Args []string
-}
-
+// parse raw input being sent by redis clients to an string slice
+// it shall be empty if there is something wrong
 func Parse(raw []byte) []string {
 	if len(raw) <= 0 {
 		return nil

@@ -2,10 +2,13 @@ package server
 
 import (
 	"fmt"
-	"github.com/winjeg/toy/resp"
 	"log"
 	"net"
+
+	"github.com/winjeg/toy/resp"
 )
+
+const defaultSize = 32
 
 func ServeRedis() {
 	server, err := net.Listen("tcp", "127.0.0.1:6379")
@@ -27,26 +30,50 @@ func handleConn(conn net.Conn) {
 	fmt.Printf("clients connected from %s\n", conn.RemoteAddr().String())
 	defer conn.Close()
 	for {
-		cml := make([]byte, 0, 16)
-		buf := make([]byte, 8)
-		n, err := conn.Read(buf)
+		cml, err := readFromConn(conn)
 		if err != nil {
-			conn.Close()
 			return
 		}
-		for  n >= 8 {
-			cml = append(cml, buf...)
-			buf = make([]byte, 8)
-			n, err = conn.Read(buf)
-			if err != nil {
-				conn.Close()
-				return
-			}
-			if n < 8 {
-				cml = append(cml, buf...)
-			}
-		}
+
+		// here to route commands
 		fmt.Println(resp.Parse(cml))
-		conn.Write([]byte("+ok\r\n"))
+
+		writeErr := write2Conn(conn)
+		if writeErr != nil {
+			return
+		}
 	}
+}
+
+func readFromConn(conn net.Conn) ([]byte, error) {
+	cml := make([]byte, 0, defaultSize)
+	buf := make([]byte, defaultSize)
+	n, err := conn.Read(buf)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	if n <= defaultSize {
+		cml = append(cml, buf...)
+		return cml, nil
+	}
+
+	for n >= defaultSize {
+		cml = append(cml, buf...)
+		buf = make([]byte, defaultSize)
+		n, err = conn.Read(buf)
+		if err != nil {
+			conn.Close()
+			return nil, err
+		}
+		if n < defaultSize {
+			cml = append(cml, buf...)
+		}
+	}
+	return cml, nil
+}
+
+func write2Conn(conn net.Conn) error {
+	_, err := conn.Write([]byte("+ok\r\n"))
+	return err
 }

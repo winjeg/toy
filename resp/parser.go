@@ -58,3 +58,11 @@ multi先发, exec 也是多次命令一起发
 */
 
 ///
+
+type Client struct {
+	Args [][]byte
+}
+
+func (c *Client) FromArgs(rawArray [][]byte) {
+
+}

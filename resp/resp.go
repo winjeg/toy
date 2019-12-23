@@ -8,26 +8,26 @@ import (
 type responseWrapper struct {
 }
 
-func (rw *responseWrapper) SimpleString(str string) string {
-	return SimpleStrPrefix + str + EndStr
+func (rw *responseWrapper) SimpleString(str string) []byte {
+	return []byte(SimpleStrPrefix + str + EndStr)
 }
 
-func (rw *responseWrapper) ErrorString(str string) string {
-	return ErrorStrPrefix + str + EndStr
+func (rw *responseWrapper) ErrorString(str string) []byte {
+	return []byte( ErrorStrPrefix + str + EndStr)
 }
 
-func (rw *responseWrapper) IntegerStr(val int64) string {
-	return IntegerPrefix + fmt.Sprintf("%d", val) + EndStr
+func (rw *responseWrapper) IntegerStr(val int64) []byte {
+	return []byte(IntegerPrefix + fmt.Sprintf("%d", val) + EndStr)
 }
 
-func (rw *responseWrapper) BulkStr(str string) string {
+func (rw *responseWrapper) BulkStr(str string) []byte {
 	lenStr := fmt.Sprintf("%d", len(str))
-	return BulkStrPrefix + lenStr + EndStr + str + EndStr
+	return []byte(BulkStrPrefix + lenStr + EndStr + str + EndStr)
 }
 
-func (rw *responseWrapper) ArrayStr(elements []interface{}) string {
+func (rw *responseWrapper) ArrayStr(elements []interface{}) []byte {
 	if len(elements) == 0 {
-		return EmptyArray
+		return []byte(EmptyArray)
 	}
 	var builder strings.Builder
 	builder.WriteString(ArrayPrefix)
@@ -36,11 +36,11 @@ func (rw *responseWrapper) ArrayStr(elements []interface{}) string {
 	for i := range elements {
 		switch elements[i].(type) {
 		case int64:
-			builder.WriteString(rw.IntegerStr(elements[i].(int64)))
+			builder.Write(rw.IntegerStr(elements[i].(int64)))
 			break
 		default:
-			builder.WriteString(rw.BulkStr(elements[i].(string)))
+			builder.Write(rw.BulkStr(elements[i].(string)))
 		}
 	}
-	return builder.String()
+	return []byte(builder.String())
 }

@@ -28,12 +28,13 @@ func NewConn(c net.Conn) *Conn {
 
 func (c *Conn) Do() {
 	log.Printf("clients connected from %s\n", c.c.RemoteAddr().String())
-	defer c.c.Close()
+	defer func() {
+		fmt.Println("closing connection with defer ")
+		c.c.Close()
+	}()
 	for {
 		cml, err := c.r.Read()
 		if err != nil {
-			errMsg := fmt.Sprintf("-error read conn: %s", err.Error())
-			c.w.Write([]byte(errMsg))
 			return
 		}
 		// here to route commands
@@ -54,17 +55,17 @@ func (c *Conn) handleArgs(args []string) []byte {
 	case "auth":
 		// TODO choose this password from any other client
 		if len(args) != 2 || !strings.EqualFold(args[1], "foobar") {
-			return []byte(wrapper.ErrorString("auth failed!"))
+			return wrapper.ErrorString("auth failed!")
 		}
 		c.lock.Lock()
 		c.authOk = true
 		c.lock.Unlock()
-		return []byte(wrapper.SimpleString("ok"))
+		return wrapper.SimpleString("ok")
 	default:
 		if c.authOk {
-			return []byte(wrapper.SimpleString("ok!"))
+			return wrapper.SimpleString("ok!")
 		} else {
-			return []byte(wrapper.ErrorString("need auth first!"))
+			return wrapper.ErrorString("need auth first!")
 		}
 	}
 }

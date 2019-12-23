@@ -8,8 +8,6 @@ import (
 	"github.com/winjeg/toy/resp"
 )
 
-const defaultSize = 32
-
 func Run(port int) {
 	server, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {

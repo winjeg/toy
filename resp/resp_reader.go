@@ -17,7 +17,6 @@ func (r *Reader) Read() ([]byte, error) {
 	buf := make([]byte, readSize)
 	n, err := r.conn.Read(buf)
 	if err != nil {
-		r.conn.Close()
 		return nil, err
 	}
 	if n < readSize {
@@ -30,7 +29,6 @@ func (r *Reader) Read() ([]byte, error) {
 		buf = make([]byte, readSize)
 		n, err = r.conn.Read(buf)
 		if err != nil {
-			r.conn.Close()
 			return nil, err
 		}
 		if n < readSize {

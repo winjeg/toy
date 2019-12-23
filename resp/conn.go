@@ -4,12 +4,12 @@ package resp
 
 import (
 	"fmt"
-	"github.com/winjeg/toy/commands"
-	"github.com/winjeg/toy/impl"
 	"log"
 	"net"
 	"strings"
 	"sync"
+
+	"github.com/winjeg/toy/commands"
 )
 
 type Conn struct {
@@ -21,12 +21,12 @@ type Conn struct {
 	store  commands.RedisCommands
 }
 
-func NewConn(c net.Conn) *Conn {
+func NewConn(c net.Conn, store commands.RedisCommands) *Conn {
 	return &Conn{
 		c:     c,
 		w:     &Writer{c},
 		r:     &Reader{conn: c},
-		store: impl.StrStore, // TODO change this to use whatever store, or implementation you want
+		store: store, // TODO change this to use whatever store, or implementation you want
 	}
 }
 

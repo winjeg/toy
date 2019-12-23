@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/winjeg/toy/impl"
 	"github.com/winjeg/toy/resp"
 )
 
@@ -20,7 +21,7 @@ func Run(port int) {
 		if err != nil {
 			continue
 		}
-		c := resp.NewConn(conn)
+		c := resp.NewConn(conn, impl.StrStore)
 		go c.Do()
 	}
 }

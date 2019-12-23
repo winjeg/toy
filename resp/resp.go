@@ -21,6 +21,9 @@ func (rw *responseWrapper) IntegerStr(val int64) []byte {
 }
 
 func (rw *responseWrapper) BulkStr(str string) []byte {
+	if len(str) == 0 {
+		return []byte(NullBulkStr)
+	}
 	lenStr := fmt.Sprintf("%d", len(str))
 	return []byte(BulkStrPrefix + lenStr + EndStr + str + EndStr)
 }

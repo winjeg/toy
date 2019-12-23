@@ -52,6 +52,10 @@ func (c *Conn) handleArgs(args []string) []byte {
 	wrapper := new(responseWrapper)
 	switch strings.ToLower(args[0]) {
 	case "auth":
+		// TODO choose this password from any other client
+		if len(args) != 2 || !strings.EqualFold(args[1], "foobar") {
+			return []byte(wrapper.ErrorString("auth failed!"))
+		}
 		c.lock.Lock()
 		c.authOk = true
 		c.lock.Unlock()

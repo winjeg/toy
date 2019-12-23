@@ -7,12 +7,15 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 )
 
 type Conn struct {
-	c net.Conn
-	w *Writer
-	r *Reader
+	c      net.Conn
+	w      *Writer
+	r      *Reader
+	authOk bool
+	lock   sync.Mutex
 }
 
 func NewConn(c net.Conn) *Conn {
@@ -23,7 +26,7 @@ func NewConn(c net.Conn) *Conn {
 	}
 }
 
-func (c Conn) Do() {
+func (c *Conn) Do() {
 	log.Printf("clients connected from %s\n", c.c.RemoteAddr().String())
 	defer c.c.Close()
 	for {
@@ -35,7 +38,7 @@ func (c Conn) Do() {
 		}
 		// here to route commands
 		args := Parse(cml)
-		result := handleArgs(args)
+		result := c.handleArgs(args)
 		writeErr := c.w.Write(result)
 		if writeErr != nil {
 			return
@@ -43,15 +46,21 @@ func (c Conn) Do() {
 	}
 }
 
-func handleArgs(args []string) []byte {
+func (c *Conn) handleArgs(args []string) []byte {
 	// must return some kind of right type of the response or the connection will be close by the client
 	// if the command is not certain you have to return error or ok, otherwise the client will close the connection.
+	wrapper := new(responseWrapper)
 	switch strings.ToLower(args[0]) {
-	case "auth", "set":
-		return []byte("+ok\r\n")
-	case "get":
-		return []byte("*1\r\n$3\r\nabc\r\n")
+	case "auth":
+		c.lock.Lock()
+		c.authOk = true
+		c.lock.Unlock()
+		return []byte(wrapper.SimpleString("ok"))
 	default:
-		return []byte(fmt.Sprintf("-unknown command %s\r\n", args[0]))
+		if c.authOk {
+			return []byte(wrapper.SimpleString("ok!"))
+		} else {
+			return []byte(wrapper.ErrorString("need auth first!"))
+		}
 	}
 }

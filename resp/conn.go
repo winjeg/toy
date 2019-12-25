@@ -51,22 +51,38 @@ func (c *Conn) Do() {
 	}
 }
 
+var (
+	wrapper        = new(responseWrapper)
+	serverPassword = "foobar"
+	passLock       sync.Mutex
+	okResp         = []byte("+OK\r\n")
+	pongResp       = []byte("+PONG\r\n")
+)
+
+func SetPassword(password string) {
+	passLock.Lock()
+	serverPassword = password
+	passLock.Unlock()
+}
+
 func (c *Conn) handleArgs(args []string) []byte {
+	if len(args) == 0 {
+		return []byte{0}
+	}
 	// must return some kind of right type of the response or the connection will be close by the client
 	// if the command is not certain you have to return error or ok, otherwise the client will close the connection.
-	wrapper := new(responseWrapper)
 	if strings.EqualFold(strings.ToLower(args[0]), "auth") {
-		if len(args) != 2 || !strings.EqualFold(args[1], "foobar") {
+		if len(args) != 2 || !strings.EqualFold(args[1], serverPassword) {
 			return wrapper.ErrorString("auth failed!")
 		}
 		c.lock.Lock()
 		c.authOk = true
 		c.lock.Unlock()
-		return wrapper.SimpleString("ok")
+		return okResp
 	}
-	if !c.authOk {
-		return wrapper.ErrorString("need auth first!")
-	}
+/*	if !c.authOk {
+		return wrapper.ErrorString("NOAUTH Authentication required")
+	}*/
 	switch strings.ToLower(args[0]) {
 	case "auth":
 		if len(args) != 2 || !strings.EqualFold(args[1], "foobar") {
@@ -77,7 +93,9 @@ func (c *Conn) handleArgs(args []string) []byte {
 		c.lock.Unlock()
 		return wrapper.SimpleString("ok")
 	case "get":
-		return wrapper.BulkStr(string(c.store.Get(args[1])))
+		return wrapper.BulkStr(c.store.Get(args[1]))
+	case "ping":
+		return pongResp
 	case "set":
 		if len(args) != 3 {
 			return wrapper.ErrorString("wrong arguments")

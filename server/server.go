@@ -5,11 +5,12 @@ import (
 	"log"
 	"net"
 
-	"github.com/winjeg/toy/impl"
+	"github.com/winjeg/toy/commands"
 	"github.com/winjeg/toy/resp"
 )
 
-func Run(port int) {
+func Run(store commands.RedisCommands, password string, port int) {
+	resp.SetPassword(password)
 	server, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		log.Println(err.Error())
@@ -21,7 +22,8 @@ func Run(port int) {
 		if err != nil {
 			continue
 		}
-		c := resp.NewConn(conn, impl.StrStore)
+		// key point of choosing which store you want
+		c := resp.NewConn(conn, store)
 		go c.Do()
 	}
 }

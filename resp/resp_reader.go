@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	readSize = 32
+	readSize = 4096
 )
 
 type Reader struct {

@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	server.Run(impl.StrStore, "123456", 6379)
+	server.Run(impl.StrStore, "123456", 6378)
 }

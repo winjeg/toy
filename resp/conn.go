@@ -65,44 +65,76 @@ func SetPassword(password string) {
 	passLock.Unlock()
 }
 
-func (c *Conn) handleArgs(args []string) []byte {
-	if len(args) == 0 {
+func (c *Conn) handleArgs(cmds []RedisCommand) []byte {
+	if len(cmds) == 0 {
 		return []byte{0}
 	}
 	// must return some kind of right type of the response or the connection will be close by the client
 	// if the command is not certain you have to return error or ok, otherwise the client will close the connection.
-	if strings.EqualFold(strings.ToLower(args[0]), "auth") {
-		if len(args) != 2 || !strings.EqualFold(args[1], serverPassword) {
-			return wrapper.ErrorString("auth failed!")
+	result := make([]byte, 0, 64)
+	for i := range cmds {
+		cmd := strings.ToLower(cmds[i].Cmd)
+		switch cmd {
+		case "auth":
+			authArgs := cmds[i].Args
+			if len(authArgs) <= 0 {
+				result = append(result, wrapper.ErrorString("wrong arguments")...)
+				continue
+			}
+			if strings.EqualFold(serverPassword, authArgs[0]) {
+				c.lock.Lock()
+				c.authOk = true
+				c.lock.Unlock()
+				result = append(result, okResp...)
+				continue
+			} else {
+				result = append(result, wrapper.ErrorString("auth failed!")...)
+				continue
+			}
+		case "get":
+			if !c.authOk {
+				result = append(result, wrapper.ErrorString("Authentication required")...)
+				continue
+			}
+			if len(cmds[i].Args) < 1 {
+				result = append(result, wrapper.ErrorString("wrong arguments")...)
+				continue
+			}
+			result = append(result, wrapper.BulkStr(c.store.Get(cmds[i].Args[0]))...)
+		case "ping":
+			if !c.authOk {
+				result = append(result, wrapper.ErrorString("Authentication required")...)
+				continue
+			}
+			result = append(result, pongResp...)
+		case "set":
+			if !c.authOk {
+				result = append(result, wrapper.ErrorString("Authentication required")...)
+				continue
+			}
+			if len(cmds[i].Args) < 2 {
+				result = append(result, wrapper.ErrorString("wrong arguments")...)
+				continue
+			}
+			c.store.Set(cmds[i].Args[0], []byte(cmds[i].Args[1]))
+			result = append(result, wrapper.SimpleString("ok")...)
+		case "config":
+			if !c.authOk {
+				result = append(result, wrapper.ErrorString("Authentication required")...)
+				continue
+			}
+			if len(cmds[i].Args) < 2 {
+				result = append(result, wrapper.ErrorString("wrong arguments")...)
+				continue
+			}
+			if strings.EqualFold(string(cmds[i].Args[0]), "get") {
+				result = append(result, okResp...)
+				continue
+			}
+			result = append(result, wrapper.ErrorString(fmt.Sprintf("unknown command config %s", string(cmds[i].Args[1])))...)
+		default:
+			result = append(result, wrapper.ErrorString("unknown command!")...)
 		}
-		c.lock.Lock()
-		c.authOk = true
-		c.lock.Unlock()
-		return okResp
 	}
-/*	if !c.authOk {
-		return wrapper.ErrorString("NOAUTH Authentication required")
-	}*/
-	switch strings.ToLower(args[0]) {
-	case "auth":
-		if len(args) != 2 || !strings.EqualFold(args[1], "foobar") {
-			return wrapper.ErrorString("auth failed!")
-		}
-		c.lock.Lock()
-		c.authOk = true
-		c.lock.Unlock()
-		return wrapper.SimpleString("ok")
-	case "get":
-		return wrapper.BulkStr(c.store.Get(args[1]))
-	case "ping":
-		return pongResp
-	case "set":
-		if len(args) != 3 {
-			return wrapper.ErrorString("wrong arguments")
-		}
-		c.store.Set(args[1], []byte(args[2]))
-		return wrapper.SimpleString("ok")
-	default:
-		return wrapper.ErrorString("unknown command!")
-	}
+	return result
 }

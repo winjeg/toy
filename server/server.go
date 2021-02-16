@@ -2,16 +2,17 @@ package server
 
 import (
 	"fmt"
+	conn2 "github.com/winjeg/toy/conn"
 	"log"
 	"net"
 
 	"github.com/winjeg/toy/commands"
-	"github.com/winjeg/toy/resp"
 )
 
 func Run(store commands.RedisCommands, password string, port int) {
-	resp.SetPassword(password)
+	conn2.SetPassword(password)
 	server, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	log.Println("server started.")
 	if err != nil {
 		log.Println(err.Error())
 		return
@@ -23,7 +24,7 @@ func Run(store commands.RedisCommands, password string, port int) {
 			continue
 		}
 		// key point of choosing which store you want
-		c := resp.NewConn(conn, store)
+		c := conn2.NewConn(conn, store)
 		go c.Do()
 	}
 }

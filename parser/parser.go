@@ -1,6 +1,7 @@
-package resp
+package parser
 
 import (
+	"github.com/winjeg/toy/resp"
 	"log"
 	"strconv"
 )
@@ -27,7 +28,7 @@ func Parse(raw []byte) []RedisCommand {
 
 	for i := 0; i < len(raw); i++ {
 		// 获取bulk的长度
-		if raw[i] == BulkStrVal && bulkLen == 0 {
+		if raw[i] == resp.BulkStrVal && bulkLen == 0 {
 			startIdx = i
 		}
 		if startIdx > 0 && raw[i] == '\r' {
@@ -65,7 +66,7 @@ func getFirstArrLen(raw []byte) int64 {
 	if len(raw) <= 0 {
 		return 0
 	}
-	if raw[0] != ArrayVal {
+	if raw[0] != resp.ArrayVal {
 		return 0
 	}
 

@@ -5,22 +5,22 @@ import (
 	"strings"
 )
 
-type responseWrapper struct {
+type ResponseWrapper struct {
 }
 
-func (rw *responseWrapper) SimpleString(str string) []byte {
+func (rw *ResponseWrapper) SimpleString(str string) []byte {
 	return []byte(SimpleStrPrefix + str + EndStr)
 }
 
-func (rw *responseWrapper) ErrorString(str string) []byte {
+func (rw *ResponseWrapper) ErrorString(str string) []byte {
 	return []byte(ErrorStrPrefix + str + EndStr)
 }
 
-func (rw *responseWrapper) IntegerStr(val int64) []byte {
+func (rw *ResponseWrapper) IntegerStr(val int64) []byte {
 	return []byte(IntegerPrefix + strconv.FormatInt(val, 10) + EndStr)
 }
 
-func (rw *responseWrapper) BulkStr(raw []byte) []byte {
+func (rw *ResponseWrapper) BulkStr(raw []byte) []byte {
 	if len(raw) == 0 {
 		return []byte(NullBulkStr)
 	}
@@ -28,7 +28,7 @@ func (rw *responseWrapper) BulkStr(raw []byte) []byte {
 	return []byte(BulkStrPrefix + lenStr + EndStr + string(raw) + EndStr)
 }
 
-func (rw *responseWrapper) ArrayStr(elements []interface{}) []byte {
+func (rw *ResponseWrapper) ArrayStr(elements []interface{}) []byte {
 	if len(elements) == 0 {
 		return []byte(EmptyArray)
 	}

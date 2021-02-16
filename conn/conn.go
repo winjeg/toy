@@ -1,9 +1,11 @@
 // this is only the page of
 
-package resp
+package conn
 
 import (
 	"fmt"
+	"github.com/winjeg/toy/parser"
+	"github.com/winjeg/toy/resp"
 	"log"
 	"net"
 	"strings"
@@ -12,10 +14,18 @@ import (
 	"github.com/winjeg/toy/commands"
 )
 
+var (
+	wrapper        = new(resp.ResponseWrapper)
+	serverPassword = "foobar"
+	passLock       sync.Mutex
+	okResp         = []byte("+OK\r\n")
+	pongResp       = []byte("+PONG\r\n")
+)
+
 type Conn struct {
 	c      net.Conn
-	w      *Writer
-	r      *Reader
+	w      *resp.Writer
+	r      *resp.Reader
 	authOk bool
 	lock   sync.Mutex
 	store  commands.RedisCommands
@@ -24,25 +34,23 @@ type Conn struct {
 func NewConn(c net.Conn, store commands.RedisCommands) *Conn {
 	return &Conn{
 		c:     c,
-		w:     &Writer{c},
-		r:     &Reader{conn: c},
+		w:     &resp.Writer{c},
+		r:     &resp.Reader{Conn: c},
 		store: store, // TODO change this to use whatever store, or implementation you want
 	}
 }
 
+// TODO use connection for both incoming and outgoing data flow
 func (c *Conn) Do() {
 	log.Printf("clients connected from %s\n", c.c.RemoteAddr().String())
-	defer func() {
-		fmt.Println("closing connection with defer ")
-		c.c.Close()
-	}()
+	defer c.Close()
 	for {
 		cml, err := c.r.Read()
 		if err != nil {
 			return
 		}
 		// here to route commands
-		args := Parse(cml)
+		args := parser.Parse(cml)
 		result := c.handleArgs(args)
 		writeErr := c.w.Write(result)
 		if writeErr != nil {
@@ -51,13 +59,11 @@ func (c *Conn) Do() {
 	}
 }
 
-var (
-	wrapper        = new(responseWrapper)
-	serverPassword = "foobar"
-	passLock       sync.Mutex
-	okResp         = []byte("+OK\r\n")
-	pongResp       = []byte("+PONG\r\n")
-)
+// close the connection of the client
+func (c *Conn) Close() {
+	fmt.Println("closing connection with defer ")
+	c.c.Close()
+}
 
 func SetPassword(password string) {
 	passLock.Lock()
@@ -65,7 +71,7 @@ func SetPassword(password string) {
 	passLock.Unlock()
 }
 
-func (c *Conn) handleArgs(cmds []RedisCommand) []byte {
+func (c *Conn) handleArgs(cmds []parser.RedisCommand) []byte {
 	if len(cmds) == 0 {
 		return []byte{0}
 	}

@@ -4,14 +4,14 @@ package conn
 
 import (
 	"fmt"
-	"github.com/winjeg/toy/parser"
-	"github.com/winjeg/toy/resp"
 	"log"
 	"net"
 	"strings"
 	"sync"
 
 	"github.com/winjeg/toy/commands"
+	"github.com/winjeg/toy/parser"
+	"github.com/winjeg/toy/resp"
 )
 
 var (
@@ -34,30 +34,38 @@ type Conn struct {
 func NewConn(c net.Conn, store commands.RedisCommands) *Conn {
 	return &Conn{
 		c:     c,
-		w:     &resp.Writer{c},
+		w:     &resp.Writer{Conn: c},
 		r:     &resp.Reader{Conn: c},
-		store: store, // TODO change this to use whatever store, or implementation you want
+		store: store,
 	}
 }
 
 // TODO use connection for both incoming and outgoing data flow
-func (c *Conn) Do() {
-	log.Printf("clients connected from %s\n", c.c.RemoteAddr().String())
+func (c *Conn) HandleCommands() {
+	log.Printf("client connected from %s\n", c.c.RemoteAddr().String())
 	defer c.Close()
 	for {
+		// 读取到一定的字符的时候就去异步处理
 		cml, err := c.r.Read()
+		log.Println(string(cml))
 		if err != nil {
+			log.Printf("error read:%v\n", err)
 			return
 		}
-		// here to route commands
-		args := parser.Parse(cml)
-		result := c.handleArgs(args)
-		writeErr := c.w.Write(result)
-		if writeErr != nil {
-			return
-		}
+		go func() {
+			// here to route commands
+			args := parser.Parse(cml)
+			result := c.handleArgs(args)
+			writeErr := c.w.Write(result)
+			if writeErr != nil {
+				log.Printf("error writting to the connection: %v\n", writeErr)
+				return
+			}
+		}()
 	}
 }
+
+/// not read then write, but read to a channel then receive from the channel
 
 // close the connection of the client
 func (c *Conn) Close() {

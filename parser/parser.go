@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"github.com/winjeg/toy/resp"
 	"log"
 	"strconv"
+
+	"github.com/winjeg/toy/resp"
 )
 
 type RedisCommand struct {

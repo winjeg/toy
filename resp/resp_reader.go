@@ -5,11 +5,12 @@ import (
 )
 
 const (
-	readSize = 4096
+	readSize = 4
 )
 
 type Reader struct {
 	Conn net.Conn
+	Data []byte // data buffer.
 }
 
 func (r *Reader) Read() ([]byte, error) {
@@ -33,6 +34,7 @@ func (r *Reader) Read() ([]byte, error) {
 		}
 		if n < readSize {
 			cml = append(cml, buf...)
+			break
 		}
 	}
 	return cml, nil

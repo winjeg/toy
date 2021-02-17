@@ -146,6 +146,8 @@ func (c *Conn) handleArgs(cmds []parser.RedisCommand) []byte {
 				continue
 			}
 			result = append(result, wrapper.ErrorString(fmt.Sprintf("unknown command config %s", string(cmds[i].Args[1])))...)
+		case "command":
+			result = append(result, []byte(resp.NullBulkStr)...)
 		default:
 			result = append(result, wrapper.ErrorString("unknown command!")...)
 		}

@@ -1,11 +1,12 @@
 package resp
 
 import (
+	"fmt"
 	"net"
 )
 
 const (
-	readSize = 4
+	readSize = 3
 )
 
 type Reader struct {
@@ -28,6 +29,7 @@ func (r *Reader) Read() ([]byte, error) {
 	for n >= readSize {
 		cml = append(cml, buf...)
 		buf = make([]byte, readSize)
+		fmt.Println(string(cml))
 		n, err = r.Conn.Read(buf)
 		if err != nil {
 			return nil, err

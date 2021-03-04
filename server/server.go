@@ -9,7 +9,7 @@ import (
 	"github.com/winjeg/toy/conn"
 )
 
-func Run(store commands.RedisCommands, password string, port int) {
+func Serve(store commands.RedisCommands, password string, port int) {
 	conn.SetPassword(password)
 	server, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	log.Println("server started.")
